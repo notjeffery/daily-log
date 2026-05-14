@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase";
 
 interface FormData {
   senderName: string; senderEmail: string; senderPhone: string;
@@ -420,6 +421,7 @@ export default function SendPage() {
   const [couponStatus, setCouponStatus] = useState<"idle"|"valid"|"invalid">("idle");
   const [couponMsg, setCouponMsg]       = useState("");
   const [submitted, setSubmitted]       = useState(false);
+  const [submitting, setSubmitting]     = useState(false);
   const [bookingId]                     = useState(() => `DL-${new Date().getFullYear()}-${Math.floor(10000+Math.random()*90000)}`);
 
   const set = (k: keyof FormData, v: string | boolean) =>
@@ -427,6 +429,72 @@ export default function SendPage() {
 
   const price = calcPrice(form);
   const isFree = couponStatus === "valid";
+
+  // Country flag map
+  const FLAGS: Record<string,string> = {
+    us:"🇺🇸",uk:"🇬🇧",de:"🇩🇪",ca:"🇨🇦",ae:"🇦🇪",za:"🇿🇦",cn:"🇨🇳",au:"🇦🇺",fr:"🇫🇷",jp:"🇯🇵",
+  };
+
+  // Origin city map (sender is always US-based for now)
+  const SERVICE_LABELS: Record<string,string> = {
+    standard:"Standard Worldwide", express:"Express Delivery", freight:"Freight & Cargo",
+  };
+
+  const handleSubmit = async () => {
+    if (!canNext()) return;
+    setSubmitting(true);
+
+    const steps = [
+      { status:"Package Received",         location:`${form.senderCity}, ${form.senderState} — DL Drop Hub`, time: new Date().toLocaleString("en-US",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"}), state:"done" },
+      { status:"Departed Origin Facility", location:`${form.senderCity} Airport`,   time:"Pending", state:"pending" },
+      { status:"Customs Cleared",          location:"Origin Customs Facility",       time:"Pending", state:"pending" },
+      { status:"In Transit — Air Freight", location:"International Route",           time:"Pending", state:"pending" },
+      { status:"Arrived at Destination Hub",location:`${form.receiverCity} Cargo Hub`, time:"Pending", state:"pending" },
+      { status:"Out for Delivery",         location:`${form.receiverCity} Local Courier`, time:"Pending", state:"pending" },
+      { status:"Delivered",                location:form.receiverAddress,            time:"Pending", state:"pending" },
+    ];
+
+    const r = RATES[form.receiverCountry];
+    const eta = r ? `Est. ${new Date(Date.now()+(parseInt(r.days)*24*60*60*1000)).toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}` : "To be confirmed";
+
+    await supabase.from("packages").insert({
+      id:               bookingId,
+      status:           "processing",
+      sender_name:      form.senderName,
+      sender_email:     form.senderEmail,
+      sender_phone:     form.senderPhone,
+      sender_address:   `${form.senderAddress}, ${form.senderCity}${form.senderState?", "+form.senderState:""} ${form.senderZip}`,
+      sender_city:      form.senderCity,
+      sender_state:     form.senderState,
+      sender_zip:       form.senderZip,
+      sender_flag:      "🇺🇸",
+      receiver_name:    form.receiverName,
+      receiver_email:   form.receiverEmail,
+      receiver_phone:   form.receiverPhone,
+      receiver_address: `${form.receiverAddress}, ${form.receiverCity} ${form.receiverZip}`,
+      receiver_city:    form.receiverCity,
+      receiver_zip:     form.receiverZip,
+      receiver_country: COUNTRIES.find(c=>c.val===form.receiverCountry)?.label || form.receiverCountry,
+      receiver_flag:    FLAGS[form.receiverCountry] || "🌍",
+      weight:           `${form.weight} kg`,
+      dimensions:       form.dimensions,
+      package_type:     form.packageType,
+      service:          SERVICE_LABELS[form.service] || form.service,
+      insurance:        form.insurance,
+      description:      form.description,
+      origin_code:      "USA",
+      origin_city:      form.senderCity,
+      origin_country:   "United States",
+      dest_code:        form.receiverCountry.toUpperCase(),
+      dest_city:        form.receiverCity,
+      dest_country:     COUNTRIES.find(c=>c.val===form.receiverCountry)?.label || form.receiverCountry,
+      eta,
+      steps,
+    });
+
+    setSubmitting(false);
+    setSubmitted(true);
+  };
 
   const checkCoupon = () => {
     const code = form.couponCode.trim().toUpperCase();
@@ -562,11 +630,11 @@ export default function SendPage() {
                     Continue →
                   </button>
                 ) : (
-                  <button onClick={()=>canNext()&&setSubmitted(true)}
+                  <button onClick={()=>canNext()&&handleSubmit()}
                     style={{background:canNext()?"var(--orange)":"rgba(244,82,30,0.3)",color:"#fff",border:"none",padding:"14px 36px",fontFamily:"var(--font-display)",fontSize:18,letterSpacing:2,cursor:canNext()?"pointer":"not-allowed",transition:"background 0.2s",flex:1,maxWidth:300}}
                     onMouseEnter={e=>{if(canNext())e.currentTarget.style.background="var(--orange-dark)";}}
                     onMouseLeave={e=>{e.currentTarget.style.background=canNext()?"var(--orange)":"rgba(244,82,30,0.3)";}}>
-                    {isFree?"Confirm — Free Shipment 🎉":"Confirm & Pay →"}
+                    {submitting?"Processing...":isFree?"Confirm — Free Shipment 🎉":"Confirm & Pay →"}
                   </button>
                 )}
               </div>

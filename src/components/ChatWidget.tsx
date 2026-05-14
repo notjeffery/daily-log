@@ -13,22 +13,22 @@ PAYMENT FAQ:
 - Accepted payments: Visa, Mastercard, American Express, PayPal, Apple Pay, Google Pay, and bank transfer for business accounts.
 - All prices are in USD ($). Payments processed securely via Stripe — we never store card details.
 - Payment is collected upfront at booking. No hidden fees — the quote you see is the price you pay.
-- Business accounts with monthly volume above $500 get net-30 invoicing. Contact sales@dailylogistics.com.
+- Business accounts with monthly volume above $500 get net-30 invoicing. Contact dailylogistics1@outlook.com.
 - Refunds: cancelled before pickup = full refund in 3–5 business days. After pickup = partial refund depending on transit stage.
 - Failed payments: ask customer to check card details or try another method. International transactions are sometimes flagged by banks.
 - No cryptocurrency or cash payments accepted.
 - Receipts are emailed automatically after every successful payment.
-- Disputed charges: email billing@dailylogistics.com with booking ID.
+- Disputed charges: email dailylogistics1@outlook.com with booking ID.
 
 TRACKING FAQ:
 - Tracking ID format: DL-YYYY-XXXXX (e.g. DL-2024-08847). Customers receive this by email after booking.
 - To track: enter ID in the Track tab on the homepage.
 - Tracking stages: Package Received → Customs Cleared → In Transit → Out for Delivery → Delivered.
-- No update in 48 hours: email support@dailylogistics.com with tracking ID.
+- No update in 48 hours: email dailylogistics1@outlook.com with tracking ID.
 - Customs delays of 1–3 days with no update are normal — package is not lost.
 - Delivery confirmation includes photo and digital signature.
 - Shows "Delivered" but not received: check neighbours or building reception, then contact support within 48 hours.
-- Lost package claims must be filed within 14 days of estimated delivery. Email claims@dailylogistics.com.
+- Lost package claims must be filed within 14 days of estimated delivery. Email dailylogistics1@outlook.com.
 - SMS and email notifications sent at every major status change if contact info was provided at booking.
 
 Never make up tracking data for a specific ID — always say you're checking and direct them to the Track tab or support email.`;
@@ -72,10 +72,10 @@ export default function ChatWidget() {
         }),
       });
       const data = await res.json();
-      const reply = data?.content?.[0]?.text ?? "I'm having a moment — please try again or email support@dailylogistics.com.";
+      const reply = data?.content?.[0]?.text ?? "I'm having a moment — please try again or email dailylogistics1@outlook.com.";
       setMessages((prev) => [...prev, { role: "bot", text: reply }]);
     } catch {
-      setMessages((prev) => [...prev, { role: "bot", text: "Sorry, I couldn't connect right now. Please email support@dailylogistics.com and we'll get back to you shortly." }]);
+      setMessages((prev) => [...prev, { role: "bot", text: "Sorry, I couldn't connect right now. Please email dailylogistics1@outlook.com and we'll get back to you shortly." }]);
     } finally {
       setLoading(false);
     }

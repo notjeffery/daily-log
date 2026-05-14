@@ -73,7 +73,7 @@ export default function Support() {
 
           {/* Email */}
           <a
-            href="mailto:support@dailylogistics.com"
+            href="mailto:dailylogistics1@outlook.com"
             style={{ background: "var(--card-bg)", border: "1px solid var(--border)", padding: "28px 32px", display: "flex", alignItems: "center", gap: 20, cursor: "pointer", textDecoration: "none", transition: "border-color 0.25s, background 0.25s" }}
             onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(244,82,30,0.45)"; e.currentTarget.style.background = "rgba(244,82,30,0.04)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "var(--card-bg)"; }}
