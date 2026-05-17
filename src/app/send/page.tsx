@@ -437,6 +437,7 @@ export default function SendPage() {
   const DEST_CITIES: Record<string,string> = {
     us:"New York", uk:"London", de:"Frankfurt", ca:"Toronto", ae:"Dubai", za:"Johannesburg", cn:"Shanghai", au:"Sydney", fr:"Paris", jp:"Tokyo",
   };
+  const FLAGS: Record<string,string> = {
     us:"🇺🇸",uk:"🇬🇧",de:"🇩🇪",ca:"🇨🇦",ae:"🇦🇪",za:"🇿🇦",cn:"🇨🇳",au:"🇦🇺",fr:"🇫🇷",jp:"🇯🇵",
   };
 
