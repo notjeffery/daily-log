@@ -250,7 +250,7 @@ function StepPayment({
 }: {
   form: FormData;
   set: (k: keyof FormData, v: string | boolean) => void;
-  couponStatus: "idle"|"valid"|"invalid";
+  couponStatus: string;
   couponMsg: string;
   checkCoupon: () => void;
   isFree: boolean;
@@ -418,7 +418,7 @@ function calcPrice(form: FormData) {
 export default function SendPage() {
   const [step, setStep]         = useState(0);
   const [form, setForm]         = useState<FormData>(EMPTY);
-  const [couponStatus, setCouponStatus] = useState<"idle"|"valid"|"invalid">("idle");
+  const [couponStatus, setCouponStatus] = useState<string>("idle");
   const [couponMsg, setCouponMsg]       = useState("");
   const [submitted, setSubmitted]       = useState(false);
   const [submitting, setSubmitting]     = useState(false);
@@ -430,8 +430,13 @@ export default function SendPage() {
   const price = calcPrice(form);
   const isFree = couponStatus === "valid";
 
-  // Country flag map
-  const FLAGS: Record<string,string> = {
+  // Destination hub codes
+  const DEST_CODES: Record<string,string> = {
+    us:"JFK", uk:"LHR", de:"FRA", ca:"YYZ", ae:"DXB", za:"JNB", cn:"PVG", au:"SYD", fr:"CDG", jp:"NRT",
+  };
+  const DEST_CITIES: Record<string,string> = {
+    us:"New York", uk:"London", de:"Frankfurt", ca:"Toronto", ae:"Dubai", za:"Johannesburg", cn:"Shanghai", au:"Sydney", fr:"Paris", jp:"Tokyo",
+  };
     us:"🇺🇸",uk:"🇬🇧",de:"🇩🇪",ca:"🇨🇦",ae:"🇦🇪",za:"🇿🇦",cn:"🇨🇳",au:"🇦🇺",fr:"🇫🇷",jp:"🇯🇵",
   };
 
@@ -482,11 +487,11 @@ export default function SendPage() {
       service:          SERVICE_LABELS[form.service] || form.service,
       insurance:        form.insurance,
       description:      form.description,
-      origin_code:      "USA",
+      origin_code:      "JFK",
       origin_city:      form.senderCity,
       origin_country:   "United States",
-      dest_code:        form.receiverCountry.toUpperCase(),
-      dest_city:        form.receiverCity,
+      dest_code:        DEST_CODES[form.receiverCountry] || form.receiverCountry.toUpperCase(),
+      dest_city:        DEST_CITIES[form.receiverCountry] || form.receiverCity,
       dest_country:     COUNTRIES.find(c=>c.val===form.receiverCountry)?.label || form.receiverCountry,
       eta,
       steps,

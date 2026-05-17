@@ -44,6 +44,10 @@ export default function TrackPage() {
       const s = localStorage.getItem("dl_recents");
       if (s) setRecents(JSON.parse(s));
     } catch {}
+    // Auto-search if ?id= param present
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("id");
+    if (id) search(id);
   }, []);
 
   const saveRecent = (id: string) => {

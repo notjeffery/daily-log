@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 const rates: Record<string, { base: number; days: string }> = {
   uk: { base: 18, days: "3–5" },
@@ -19,35 +21,48 @@ const serviceMultiplier: Record<string, number> = {
 };
 
 export default function ActionPanel() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"track" | "send" | "receive">("track");
   const [trackId, setTrackId]     = useState("");
   const [trackStatus, setTrackStatus] = useState<"idle" | "loading" | "found" | "notfound">("idle");
+  const [trackResult, setTrackResult] = useState<{status:string; eta:string; steps:{status:string;state:string;time:string}[]} | null>(null);
 
-  // Send form state
-  const [country, setCountry]   = useState("");
-  const [weight, setWeight]     = useState("");
-  const [service, setService]   = useState("standard");
+  const [country, setCountry] = useState("");
+  const [weight, setWeight]   = useState("");
+  const [service, setService] = useState("standard");
 
-  // Price calc
   const calcPrice = () => {
     if (!country || !weight || parseFloat(weight) <= 0) return null;
     const r = rates[country];
     if (!r) return null;
-    const base = r.base;
+    const base    = r.base;
     const wCharge = Math.round(parseFloat(weight) * 3 * 100) / 100;
-    const mult = serviceMultiplier[service];
-    const sFee = Math.round((base + wCharge) * (mult - 1) * 100) / 100;
-    const total = Math.round((base + wCharge + sFee) * 100) / 100;
+    const mult    = serviceMultiplier[service];
+    const sFee    = Math.round((base + wCharge) * (mult - 1) * 100) / 100;
+    const total   = Math.round((base + wCharge + sFee) * 100) / 100;
     return { base, wCharge, sFee, total, days: r.days };
   };
   const price = calcPrice();
 
-  const handleTrack = () => {
-    if (!trackId.trim()) return;
+  const handleTrack = async () => {
+    const id = trackId.trim().toUpperCase();
+    if (!id) return;
     setTrackStatus("loading");
-    setTimeout(() => {
-      setTrackStatus(trackId.toUpperCase().includes("DL-2024") ? "found" : "notfound");
-    }, 1200);
+    setTrackResult(null);
+
+    const { data, error } = await supabase
+      .from("packages")
+      .select("id, status, eta, steps")
+      .eq("id", id)
+      .single();
+
+    if (error || !data) {
+      setTrackStatus("notfound");
+      return;
+    }
+
+    setTrackResult(data);
+    setTrackStatus("found");
   };
 
   const tabs = [
@@ -152,28 +167,25 @@ export default function ActionPanel() {
             </div>
 
             {/* Result */}
-            {trackStatus === "found" && (
+            {trackStatus === "found" && trackResult && (
               <div style={{ background: "var(--card-bg)", border: "1px solid var(--border)", padding: 28, position: "relative" }}>
                 <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "linear-gradient(90deg, var(--orange), transparent)" }} />
-                <div style={{ fontFamily: "var(--font-display)", fontSize: 26, letterSpacing: 2, color: "var(--orange)", marginBottom: 16 }}>{trackId.toUpperCase()}</div>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20, fontFamily: "var(--font-mono)", fontSize: 12 }}>
-                  <div><div style={{ fontSize: 18, fontFamily: "var(--font-display)", letterSpacing: 1 }}>JFK</div><div style={{ fontSize: 10, color: "var(--muted)" }}>New York, US</div></div>
-                  <div style={{ color: "var(--orange)", fontSize: 18, flex: 1, textAlign: "center" }}>──✈──</div>
-                  <div style={{ textAlign: "right" }}><div style={{ fontSize: 18, fontFamily: "var(--font-display)", letterSpacing: 1 }}>LHR</div><div style={{ fontSize: 10, color: "var(--muted)" }}>London, UK</div></div>
+                <div style={{ fontFamily: "var(--font-display)", fontSize: 26, letterSpacing: 2, color: "var(--orange)", marginBottom: 8 }}>{trackResult.id}</div>
+                <div style={{ fontSize: 12, color: "var(--muted)", fontFamily: "var(--font-mono)", marginBottom: 20 }}>ETA: {trackResult.eta}</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
+                  {trackResult.steps?.map((s: {status:string;state:string;time:string}, i: number) => (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13 }}>
+                      <div style={{ width: 10, height: 10, borderRadius: "50%", flexShrink: 0, background: s.state === "done" ? "#4CAF50" : s.state === "active" ? "var(--orange)" : "rgba(255,255,255,0.15)" }} />
+                      <span style={{ flex: 1, color: s.state === "pending" ? "var(--muted)" : s.state === "active" ? "var(--orange)" : "var(--white)" }}>{s.status}</span>
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--muted)" }}>{s.time}</span>
+                    </div>
+                  ))}
                 </div>
-                {[
-                  { label: "Package Received", time: "May 11 · 08:14", state: "done" },
-                  { label: "Cleared Customs",  time: "May 11 · 13:30", state: "done" },
-                  { label: "In Transit ✈",     time: "May 11 · 16:00", state: "active" },
-                  { label: "Out for Delivery", time: "Est. May 13",     state: "pending" },
-                  { label: "Delivered",        time: "Est. May 13",     state: "pending" },
-                ].map((s) => (
-                  <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 13, marginBottom: 10 }}>
-                    <div style={{ width: 10, height: 10, borderRadius: "50%", flexShrink: 0, background: s.state === "done" ? "#4CAF50" : s.state === "active" ? "var(--orange)" : "rgba(255,255,255,0.15)", boxShadow: s.state === "active" ? "0 0 8px rgba(244,82,30,0.6)" : "none" }} />
-                    <span style={{ flex: 1, color: s.state === "pending" ? "var(--muted)" : s.state === "active" ? "var(--orange)" : "var(--white)" }}>{s.label}</span>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--muted)" }}>{s.time}</span>
-                  </div>
-                ))}
+                <button onClick={() => router.push(`/track?id=${trackResult.id}`)}
+                  style={{ width: "100%", background: "var(--orange)", color: "#fff", border: "none", padding: "12px", fontFamily: "var(--font-display)", fontSize: 16, letterSpacing: 2, cursor: "pointer", transition: "background 0.2s" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "var(--orange-dark)"}
+                  onMouseLeave={e => e.currentTarget.style.background = "var(--orange)"}
+                >View Full Details →</button>
               </div>
             )}
             {trackStatus === "notfound" && (
