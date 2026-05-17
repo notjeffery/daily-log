@@ -25,7 +25,7 @@ export default function ActionPanel() {
   const [activeTab, setActiveTab] = useState<"track" | "send" | "receive">("track");
   const [trackId, setTrackId]     = useState("");
   const [trackStatus, setTrackStatus] = useState<"idle" | "loading" | "found" | "notfound">("idle");
-  const [trackResult, setTrackResult] = useState<{status:string; eta:string; steps:{status:string;state:string;time:string}[]} | null>(null);
+  const [trackResult, setTrackResult] = useState<{id:string; status:string; eta:string; steps:{status:string;state:string;time:string}[]} | null>(null);
 
   const [country, setCountry] = useState("");
   const [weight, setWeight]   = useState("");
