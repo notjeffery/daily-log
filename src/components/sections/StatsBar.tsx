@@ -9,57 +9,60 @@ const stats = [
 
 export default function StatsBar() {
   return (
-    <div
-      style={{
-        borderTop: "1px solid var(--border)",
-        borderBottom: "1px solid var(--border)",
-        display: "grid",
-        gridTemplateColumns: "repeat(4, 1fr)",
-      }}
-    >
-      {stats.map((s, i) => (
-        <div
-          key={s.label}
-          style={{
-            padding: "48px 40px",
-            borderRight: i < stats.length - 1 ? "1px solid var(--border)" : "none",
-            position: "relative",
-            overflow: "hidden",
-            cursor: "default",
-          }}
-          onMouseEnter={(e) => {
-            (e.currentTarget.querySelector(".stat-bg") as HTMLElement).style.opacity = "1";
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget.querySelector(".stat-bg") as HTMLElement).style.opacity = "0";
-          }}
-        >
-          <div
-            className="stat-bg"
-            style={{
-              position: "absolute",
-              inset: 0,
-              background: "rgba(244,82,30,0.04)",
-              opacity: 0,
-              transition: "opacity 0.3s",
-              pointerEvents: "none",
-            }}
-          />
-          <div
-            style={{
-              fontFamily: "var(--font-display)",
-              fontSize: 56,
-              letterSpacing: 1,
-              lineHeight: 1,
-              marginBottom: 8,
-            }}
+    <>
+      <style>{`
+        .stats-bar {
+          border-top: 1px solid var(--border);
+          border-bottom: 1px solid var(--border);
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+        }
+        .stat-item {
+          padding: 48px 40px;
+          border-right: 1px solid var(--border);
+          position: relative;
+          overflow: hidden;
+          cursor: default;
+        }
+        .stat-item:last-child { border-right: none; }
+        .stat-bg {
+          position: absolute; inset: 0;
+          background: rgba(244,82,30,0.04);
+          opacity: 0; transition: opacity 0.3s;
+          pointer-events: none;
+        }
+        .stat-number {
+          font-family: var(--font-display);
+          font-size: 56px;
+          letter-spacing: 1px;
+          line-height: 1;
+          margin-bottom: 8px;
+        }
+        .stat-label { font-size: 13px; color: var(--muted); }
+        @media (max-width: 768px) {
+          .stats-bar { grid-template-columns: 1fr 1fr !important; }
+          .stat-item { padding: 28px 20px !important; border-right: 1px solid var(--border) !important; }
+          .stat-item:nth-child(2) { border-right: none !important; }
+          .stat-item:nth-child(3) { border-top: 1px solid var(--border); }
+          .stat-item:nth-child(4) { border-top: 1px solid var(--border); border-right: none !important; }
+          .stat-number { font-size: 36px !important; }
+          .stat-label { font-size: 11px !important; }
+        }
+      `}</style>
+      <div className="stats-bar">
+        {stats.map((s, i) => (
+          <div key={s.label} className="stat-item"
+            onMouseEnter={e => (e.currentTarget.querySelector(".stat-bg") as HTMLElement).style.opacity = "1"}
+            onMouseLeave={e => (e.currentTarget.querySelector(".stat-bg") as HTMLElement).style.opacity = "0"}
           >
-            {s.number}
-            <span style={{ color: "var(--orange)" }}>{s.suffix}</span>
+            <div className="stat-bg" />
+            <div className="stat-number">
+              {s.number}<span style={{ color: "var(--orange)" }}>{s.suffix}</span>
+            </div>
+            <div className="stat-label">{s.label}</div>
           </div>
-          <div style={{ fontSize: 13, color: "var(--muted)" }}>{s.label}</div>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+    </>
   );
 }
