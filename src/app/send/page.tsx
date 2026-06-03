@@ -11,7 +11,7 @@ interface FormData {
   insurance: boolean; description: string;
   receiverName: string; receiverEmail: string; receiverPhone: string;
   receiverAddress: string; receiverCity: string; receiverCountry: string; receiverZip: string;
-  paymentMethod: "card" | "paypal" | "applepay" | "coupon" | "";
+  paymentMethod: "card" | "paypal" | "applepay" | "coupon" | "receiver-pays" | "";
   cardName: string; cardNumber: string; cardExpiry: string; cardCvv: string;
   couponCode: string;
 }
@@ -269,10 +269,11 @@ function StepPayment({
       )}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:24}}>
         {([
-          {id:"card",     icon:"💳", label:"Credit / Debit Card",  sub:"Visa, Mastercard, Amex"},
-          {id:"paypal",   icon:"🅿️", label:"PayPal",               sub:"Pay via your PayPal account"},
-          {id:"applepay", icon:"🍎", label:"Apple Pay",            sub:"Pay with Touch / Face ID"},
-          {id:"coupon",   icon:"🎟️", label:"Company Coupon",       sub:"100% covered — enter code below"},
+          {id:"card",         icon:"💳", label:"Credit / Debit Card",  sub:"Visa, Mastercard, Amex"},
+          {id:"paypal",       icon:"🅿️", label:"PayPal",               sub:"Pay via your PayPal account"},
+          {id:"applepay",     icon:"🍎", label:"Apple Pay",            sub:"Pay with Touch / Face ID"},
+          {id:"coupon",       icon:"🎟️", label:"Company Coupon",       sub:"100% covered — enter code below"},
+          {id:"receiver-pays",icon:"📬", label:"Receiver Pays",        sub:"Package held until receiver pays"},
         ] as const).map(m => (
           <div key={m.id} onClick={() => set("paymentMethod", m.id)}
             style={{padding:"18px 20px",border:`1px solid ${form.paymentMethod===m.id?"var(--orange)":"var(--border)"}`,background:form.paymentMethod===m.id?"rgba(244,82,30,0.07)":"var(--card-bg)",cursor:"pointer",display:"flex",alignItems:"center",gap:14,transition:"all 0.2s"}}>
@@ -364,6 +365,33 @@ function StepPayment({
           <p style={{fontSize:11,color:"var(--muted)",marginTop:12,fontFamily:"var(--font-mono)"}}>
             Test codes: DLFREESHIP · CORPSHIP24 · DLSTAFF100
           </p>
+        </div>
+      )}
+
+      {/* Receiver Pays */}
+      {form.paymentMethod==="receiver-pays" && (
+        <div style={{...CARD,marginBottom:16}}>
+          <div style={{position:"absolute",top:0,left:0,right:0,height:2,background:"linear-gradient(90deg,#f5a623,transparent)"}} />
+          <div style={{display:"flex",gap:16,alignItems:"flex-start"}}>
+            <span style={{fontSize:32,flexShrink:0}}>📬</span>
+            <div>
+              <div style={{fontFamily:"var(--font-display)",fontSize:22,letterSpacing:1.5,color:"#f5a623",marginBottom:8}}>Receiver Pays</div>
+              <p style={{fontSize:13,color:"var(--muted)",lineHeight:1.7,marginBottom:16}}>
+                Your package will be received and held at our facility. The receiver will get the tracking ID from you, track the package, contact our support team, and pay the shipping fee before the package is dispatched. No charge to you as the sender.
+              </p>
+              <div style={{background:"rgba(245,166,35,0.08)",border:"1px solid rgba(245,166,35,0.3)",padding:"12px 16px",fontSize:13}}>
+                <div style={{color:"#f5a623",fontWeight:600,marginBottom:4}}>How it works:</div>
+                <div style={{color:"var(--muted)",lineHeight:1.8}}>
+                  1. You drop off the package and get a tracking ID<br/>
+                  2. Share the tracking ID with the receiver<br/>
+                  3. Receiver tracks the package at /track<br/>
+                  4. Receiver sees payment required banner and contacts support<br/>
+                  5. Receiver pays — your team confirms in admin<br/>
+                  6. Package status updated and shipment begins
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -465,7 +493,7 @@ export default function SendPage() {
 
     await supabase.from("packages").insert({
       id:               bookingId,
-      status:           "processing",
+      status:           form.paymentMethod === "receiver-pays" ? "payment-pending" : "processing",
       sender_name:      form.senderName,
       sender_email:     form.senderEmail,
       sender_phone:     form.senderPhone,
@@ -523,6 +551,7 @@ export default function SendPage() {
       if (form.paymentMethod==="card") return !!(form.cardName && form.cardNumber && form.cardExpiry && form.cardCvv);
       if (form.paymentMethod==="paypal" || form.paymentMethod==="applepay") return true;
       if (form.paymentMethod==="coupon") return couponStatus==="valid";
+      if (form.paymentMethod==="receiver-pays") return true;
       return false;
     }
     return false;
@@ -538,6 +567,7 @@ export default function SendPage() {
         <p style={{fontSize:14,color:"var(--muted)",lineHeight:1.8,marginBottom:32}}>
           Your shipment has been booked. A confirmation email has been sent to <strong style={{color:"var(--white)"}}>{form.senderEmail}</strong>. Our team will arrange pickup within your selected window.
           {isFree && <><br/><br/><span style={{color:"#4CAF50"}}>✓ Fully covered by your company coupon — no charge to you.</span></>}
+          {form.paymentMethod==="receiver-pays" && <><br/><br/><span style={{color:"#f5a623"}}>📬 Package will be held until the receiver contacts support and pays the shipping fee. Share the tracking ID with your receiver.</span></>}
         </p>
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
           <Link href="/track" style={{display:"block",background:"var(--orange)",color:"#fff",padding:14,fontFamily:"var(--font-display)",fontSize:18,letterSpacing:2,textDecoration:"none"}}>
@@ -640,7 +670,7 @@ export default function SendPage() {
                     style={{background:canNext()?"var(--orange)":"rgba(244,82,30,0.3)",color:"#fff",border:"none",padding:"14px 36px",fontFamily:"var(--font-display)",fontSize:18,letterSpacing:2,cursor:canNext()?"pointer":"not-allowed",transition:"background 0.2s",flex:1,maxWidth:300}}
                     onMouseEnter={e=>{if(canNext())e.currentTarget.style.background="var(--orange-dark)";}}
                     onMouseLeave={e=>{e.currentTarget.style.background=canNext()?"var(--orange)":"rgba(244,82,30,0.3)";}}>
-                    {submitting?"Processing...":isFree?"Confirm — Free Shipment 🎉":"Confirm & Pay →"}
+                    {submitting ? "Processing..." : isFree ? "Confirm — Free Shipment 🎉" : form.paymentMethod==="receiver-pays" ? "Confirm — Receiver Pays 📬" : "Confirm & Pay →"}
                   </button>
                 )}
               </div>
