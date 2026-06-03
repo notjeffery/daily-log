@@ -29,12 +29,13 @@ interface Pkg {
 const ADMIN_PASSWORD = "DL@Admin2024";
 
 const STATUS_OPTIONS = [
-  { val: "processing",  label: "Processing",          color: "#6b6660" },
-  { val: "in-transit",  label: "In Transit",           color: "#f4521e" },
-  { val: "withheld",    label: "Withheld — Customs",   color: "#f5a623" },
-  { val: "delayed",     label: "Delayed",              color: "#f5a623" },
-  { val: "arrived",     label: "Arrived at Hub",       color: "#4CAF50" },
-  { val: "delivered",   label: "Delivered",            color: "#4CAF50" },
+  { val: "processing",      label: "Processing",          color: "#6b6660" },
+  { val: "payment-pending", label: "Payment Pending",     color: "#f5a623" },
+  { val: "in-transit",      label: "In Transit",          color: "#f4521e" },
+  { val: "withheld",        label: "Withheld — Customs",  color: "#f5a623" },
+  { val: "delayed",         label: "Delayed",             color: "#f5a623" },
+  { val: "arrived",         label: "Arrived at Hub",      color: "#4CAF50" },
+  { val: "delivered",       label: "Delivered",           color: "#4CAF50" },
 ];
 
 const STEP_STATES = ["done", "active", "pending"] as const;
