@@ -13,7 +13,7 @@ interface Step {
 
 interface Pkg {
   id: string;
-  status: "in-transit" | "withheld" | "delayed" | "arrived" | "delivered" | "processing";
+  status: "in-transit" | "withheld" | "delayed" | "arrived" | "delivered" | "processing" | "payment-pending";
   sender_name: string; sender_address: string; sender_flag: string;
   receiver_name: string; receiver_address: string; receiver_flag: string;
   weight: string; dimensions: string; package_type: string; service: string;
