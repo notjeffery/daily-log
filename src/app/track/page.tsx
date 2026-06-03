@@ -23,12 +23,13 @@ interface Pkg {
 }
 
 const STATUS_CFG = {
-  "in-transit":  { label: "In Transit",         color: "#f4521e", bg: "rgba(244,82,30,0.1)",  icon: "✈️"  },
-  "withheld":    { label: "Withheld — Customs",  color: "#f5a623", bg: "rgba(245,166,35,0.1)", icon: "⚠️"  },
-  "delayed":     { label: "Delayed",             color: "#f5a623", bg: "rgba(245,166,35,0.1)", icon: "🕐"  },
-  "arrived":     { label: "Arrived at Hub",      color: "#4CAF50", bg: "rgba(76,175,80,0.1)",  icon: "📦"  },
-  "delivered":   { label: "Delivered",           color: "#4CAF50", bg: "rgba(76,175,80,0.1)",  icon: "✅"  },
-  "processing":  { label: "Processing",          color: "#6b6660", bg: "rgba(107,102,96,0.1)", icon: "🔄"  },
+  "in-transit":       { label: "In Transit",              color: "#f4521e", bg: "rgba(244,82,30,0.1)",  icon: "✈️"  },
+  "withheld":         { label: "Withheld — Customs",       color: "#f5a623", bg: "rgba(245,166,35,0.1)", icon: "⚠️"  },
+  "delayed":          { label: "Delayed",                  color: "#f5a623", bg: "rgba(245,166,35,0.1)", icon: "🕐"  },
+  "arrived":          { label: "Arrived at Hub",           color: "#4CAF50", bg: "rgba(76,175,80,0.1)",  icon: "📦"  },
+  "delivered":        { label: "Delivered",                color: "#4CAF50", bg: "rgba(76,175,80,0.1)",  icon: "✅"  },
+  "processing":       { label: "Processing",               color: "#6b6660", bg: "rgba(107,102,96,0.1)", icon: "🔄"  },
+  "payment-pending":  { label: "Payment Required",         color: "#f5a623", bg: "rgba(245,166,35,0.1)", icon: "💳"  },
 };
 
 type SearchState = "idle" | "loading" | "notfound";
@@ -79,8 +80,9 @@ export default function TrackPage() {
     saveRecent(id);
   };
 
-  const cfg = pkg ? STATUS_CFG[pkg.status] : null;
+  const cfg = pkg ? STATUS_CFG[pkg.status as keyof typeof STATUS_CFG] ?? STATUS_CFG["processing"] : null;
   const needsHelp = pkg?.status === "withheld" || pkg?.status === "delayed";
+  const needsPayment = pkg?.status === "payment-pending";
 
   return (
     <>
@@ -273,6 +275,34 @@ export default function TrackPage() {
                           <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
                             <a href="mailto:dailylogistics1@outlook.com" style={{background:"#f5a623",color:"#000",padding:"12px 24px",fontFamily:"var(--font-display)",fontSize:16,letterSpacing:1.5,textDecoration:"none",fontWeight:700}}>Email Support →</a>
                             <a href="tel:+10000000000" style={{background:"transparent",color:"var(--white)",padding:"12px 24px",fontFamily:"var(--font-display)",fontSize:16,letterSpacing:1.5,textDecoration:"none",border:"1px solid var(--border)"}}>Call Us</a>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Payment pending alert */}
+                  {needsPayment&&(
+                    <div style={{background:"rgba(245,166,35,0.07)",border:"1px solid rgba(245,166,35,0.35)",padding:28}}>
+                      <div style={{display:"flex",gap:16,alignItems:"flex-start"}}>
+                        <span style={{fontSize:30,flexShrink:0}}>💳</span>
+                        <div>
+                          <div style={{fontFamily:"var(--font-display)",fontSize:22,letterSpacing:1.5,color:"#f5a623",marginBottom:8}}>Payment Required to Ship</div>
+                          <p style={{fontSize:14,color:"var(--muted)",lineHeight:1.7,marginBottom:16}}>
+                            This package is being held at our facility and will not be shipped until the shipping fee is paid. To release your package, please contact our support team with your tracking ID and we will provide payment instructions.
+                          </p>
+                          <div style={{background:"rgba(245,166,35,0.1)",border:"1px solid rgba(245,166,35,0.2)",padding:"12px 16px",marginBottom:16,fontSize:13}}>
+                            <span style={{color:"#f5a623",fontWeight:600}}>Tracking ID: </span>
+                            <span style={{fontFamily:"var(--font-mono)",color:"var(--white)",letterSpacing:1}}>{pkg.id}</span>
+                          </div>
+                          <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
+                            <a href={`mailto:dailylogistics1@outlook.com?subject=Payment for Package ${pkg.id}&body=Hello, I would like to pay for my package with tracking ID: ${pkg.id}. Please send me payment instructions.`}
+                              style={{background:"#f5a623",color:"#000",padding:"12px 24px",fontFamily:"var(--font-display)",fontSize:16,letterSpacing:1.5,textDecoration:"none",fontWeight:700}}>
+                              Pay Now — Email Support →
+                            </a>
+                            <a href="tel:+10000000000" style={{background:"transparent",color:"var(--white)",padding:"12px 24px",fontFamily:"var(--font-display)",fontSize:16,letterSpacing:1.5,textDecoration:"none",border:"1px solid var(--border)"}}>
+                              Call Us
+                            </a>
                           </div>
                         </div>
                       </div>
