@@ -47,7 +47,6 @@ const EMPTY: FormData = {
   paymentMethod:"",cardName:"",cardNumber:"",cardExpiry:"",cardCvv:"",couponCode:"",
 };
 
-// ── Shared input styles ── defined OUTSIDE all components so they never change reference
 const INP: React.CSSProperties = {
   background:"rgba(255,255,255,0.04)", border:"1px solid var(--border)",
   color:"var(--white)", padding:"13px 16px", fontSize:14, outline:"none",
@@ -66,7 +65,6 @@ const onFocus = (e: React.FocusEvent<HTMLInputElement|HTMLTextAreaElement|HTMLSe
 const onBlur = (e: React.FocusEvent<HTMLInputElement|HTMLTextAreaElement|HTMLSelectElement>) =>
   (e.currentTarget.style.borderColor = "var(--border)");
 
-// ── Step 0 — Sender ── defined outside SendPage
 function StepSender({ form, set }: { form: FormData; set: (k: keyof FormData, v: string) => void }) {
   return (
     <div>
@@ -102,7 +100,6 @@ function StepSender({ form, set }: { form: FormData; set: (k: keyof FormData, v:
   );
 }
 
-// ── Step 1 — Package ──
 function StepPackage({ form, set, price }: { form: FormData; set: (k: keyof FormData, v: string | boolean) => void; price: ReturnType<typeof calcPrice> }) {
   return (
     <div>
@@ -157,7 +154,6 @@ function StepPackage({ form, set, price }: { form: FormData; set: (k: keyof Form
   );
 }
 
-// ── Step 2 — Receiver ──
 function StepReceiver({ form, set }: { form: FormData; set: (k: keyof FormData, v: string) => void }) {
   return (
     <div>
@@ -198,7 +194,6 @@ function StepReceiver({ form, set }: { form: FormData; set: (k: keyof FormData, 
   );
 }
 
-// ── Step 3 — Review ──
 function StepReview({ form, goTo }: { form: FormData; goTo: (s: number) => void }) {
   const countryLabel = COUNTRIES.find(c => c.val === form.receiverCountry)?.label || "—";
   return (
@@ -244,7 +239,6 @@ function StepReview({ form, goTo }: { form: FormData; goTo: (s: number) => void 
   );
 }
 
-// ── Step 4 — Payment ──
 function StepPayment({
   form, set, couponStatus, couponMsg, checkCoupon, isFree,
 }: {
@@ -289,7 +283,6 @@ function StepPayment({
         ))}
       </div>
 
-      {/* Card form */}
       {form.paymentMethod==="card" && !isFree && (
         <div style={{...CARD,marginBottom:16}}>
           <div style={{position:"absolute",top:0,left:0,right:0,height:2,background:"linear-gradient(90deg,var(--orange),transparent)"}} />
@@ -314,7 +307,6 @@ function StepPayment({
         </div>
       )}
 
-      {/* PayPal */}
       {form.paymentMethod==="paypal" && !isFree && (
         <div style={{...CARD,textAlign:"center",marginBottom:16}}>
           <div style={{fontSize:40,marginBottom:12}}>🅿️</div>
@@ -322,7 +314,6 @@ function StepPayment({
         </div>
       )}
 
-      {/* Apple Pay */}
       {form.paymentMethod==="applepay" && !isFree && (
         <div style={{...CARD,textAlign:"center",marginBottom:16}}>
           <div style={{fontSize:40,marginBottom:12}}>🍎</div>
@@ -330,7 +321,6 @@ function StepPayment({
         </div>
       )}
 
-      {/* Coupon */}
       {form.paymentMethod==="coupon" && (
         <div style={{...CARD,marginBottom:16}}>
           <div style={{position:"absolute",top:0,left:0,right:0,height:2,background:"linear-gradient(90deg,var(--orange),transparent)"}} />
@@ -368,7 +358,6 @@ function StepPayment({
         </div>
       )}
 
-      {/* Receiver Pays */}
       {form.paymentMethod==="receiver-pays" && (
         <div style={{...CARD,marginBottom:16}}>
           <div style={{position:"absolute",top:0,left:0,right:0,height:2,background:"linear-gradient(90deg,#f5a623,transparent)"}} />
@@ -398,7 +387,6 @@ function StepPayment({
   );
 }
 
-// ── Utility sub-components (outside main) ──
 function SectionHeader({ icon, title, desc }: { icon:string; title:string; desc:string }) {
   return (
     <div style={{marginBottom:28}}>
@@ -429,7 +417,6 @@ function ReviewCard({ title, rows, onEdit }: { title:string; rows:{l:string;v:st
   );
 }
 
-// ── Price calculator (pure function, outside component) ──
 function calcPrice(form: FormData) {
   const r = RATES[form.receiverCountry];
   if (!r || !form.weight || parseFloat(form.weight) <= 0) return null;
@@ -450,6 +437,7 @@ export default function SendPage() {
   const [couponMsg, setCouponMsg]       = useState("");
   const [submitted, setSubmitted]       = useState(false);
   const [submitting, setSubmitting]     = useState(false);
+  const [submitError, setSubmitError]   = useState<string | null>(null); // ← NEW: error state
   const [bookingId]                     = useState(() => `DL-${new Date().getFullYear()}-${Math.floor(10000+Math.random()*90000)}`);
 
   const set = (k: keyof FormData, v: string | boolean) =>
@@ -458,7 +446,6 @@ export default function SendPage() {
   const price = calcPrice(form);
   const isFree = couponStatus === "valid";
 
-  // Destination hub codes
   const DEST_CODES: Record<string,string> = {
     us:"JFK", uk:"LHR", de:"FRA", ca:"YYZ", ae:"DXB", za:"JNB", cn:"PVG", au:"SYD", fr:"CDG", jp:"NRT",
   };
@@ -469,29 +456,33 @@ export default function SendPage() {
     us:"🇺🇸",uk:"🇬🇧",de:"🇩🇪",ca:"🇨🇦",ae:"🇦🇪",za:"🇿🇦",cn:"🇨🇳",au:"🇦🇺",fr:"🇫🇷",jp:"🇯🇵",
   };
 
-  // Origin city map (sender is always US-based for now)
   const SERVICE_LABELS: Record<string,string> = {
     standard:"Standard Worldwide", express:"Express Delivery", freight:"Freight & Cargo",
   };
 
+  // ── FIXED handleSubmit — now catches and displays insert errors ──
   const handleSubmit = async () => {
     if (!canNext()) return;
     setSubmitting(true);
+    setSubmitError(null); // clear any previous error
 
     const steps = [
-      { status:"Package Received",         location:`${form.senderCity}, ${form.senderState} — DL Drop Hub`, time: new Date().toLocaleString("en-US",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"}), state:"done" },
-      { status:"Departed Origin Facility", location:`${form.senderCity} Airport`,   time:"Pending", state:"pending" },
-      { status:"Customs Cleared",          location:"Origin Customs Facility",       time:"Pending", state:"pending" },
-      { status:"In Transit — Air Freight", location:"International Route",           time:"Pending", state:"pending" },
-      { status:"Arrived at Destination Hub",location:`${form.receiverCity} Cargo Hub`, time:"Pending", state:"pending" },
-      { status:"Out for Delivery",         location:`${form.receiverCity} Local Courier`, time:"Pending", state:"pending" },
-      { status:"Delivered",                location:form.receiverAddress,            time:"Pending", state:"pending" },
+      { status:"Package Received",          location:`${form.senderCity}, ${form.senderState} — DL Drop Hub`, time: new Date().toLocaleString("en-US",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"}), state:"done" },
+      { status:"Departed Origin Facility",  location:`${form.senderCity} Airport`,        time:"Pending", state:"pending" },
+      { status:"Customs Cleared",           location:"Origin Customs Facility",            time:"Pending", state:"pending" },
+      { status:"In Transit — Air Freight",  location:"International Route",                time:"Pending", state:"pending" },
+      { status:"Arrived at Destination Hub",location:`${form.receiverCity} Cargo Hub`,    time:"Pending", state:"pending" },
+      { status:"Out for Delivery",          location:`${form.receiverCity} Local Courier`, time:"Pending", state:"pending" },
+      { status:"Delivered",                 location:form.receiverAddress,                 time:"Pending", state:"pending" },
     ];
 
     const r = RATES[form.receiverCountry];
-    const eta = r ? `Est. ${new Date(Date.now()+(parseInt(r.days)*24*60*60*1000)).toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}` : "To be confirmed";
+    const eta = r
+      ? `Est. ${new Date(Date.now()+(parseInt(r.days)*24*60*60*1000)).toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}`
+      : "To be confirmed";
 
-    await supabase.from("packages").insert({
+    // ── THE FIX: capture { error } and bail out if insert fails ──
+    const { error } = await supabase.from("packages").insert({
       id:               bookingId,
       status:           form.paymentMethod === "receiver-pays" ? "payment-pending" : "processing",
       sender_name:      form.senderName,
@@ -527,7 +518,15 @@ export default function SendPage() {
     });
 
     setSubmitting(false);
-    setSubmitted(true);
+
+    if (error) {
+      // Show the exact Supabase error on screen so you can diagnose it
+      console.error("Supabase insert error:", error);
+      setSubmitError(`Booking failed: ${error.message}`);
+      return; // ← stop here; do NOT show confirmation screen
+    }
+
+    setSubmitted(true); // only reached if insert succeeded
   };
 
   const checkCoupon = () => {
@@ -591,7 +590,6 @@ export default function SendPage() {
         }
       `}</style>
 
-      {/* NAV */}
       <nav style={{position:"fixed",top:0,left:0,right:0,zIndex:100,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"22px 60px",backdropFilter:"blur(18px)",background:"rgba(10,10,10,0.8)",borderBottom:"1px solid var(--border)"}}>
         <Link href="/" style={{display:"flex",alignItems:"center",gap:10,textDecoration:"none"}}>
           <div style={{width:36,height:36,background:"var(--orange)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--font-display)",fontSize:20,color:"#fff"}}>DL</div>
@@ -605,7 +603,6 @@ export default function SendPage() {
 
       <div style={{minHeight:"100vh",background:"var(--black)",color:"var(--white)",paddingTop:80}}>
 
-        {/* HERO */}
         <div style={{background:"#0d0c0c",borderBottom:"1px solid var(--border)",padding:"60px 60px 48px",position:"relative",overflow:"hidden"}} className="sp">
           <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(244,82,30,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(244,82,30,0.03) 1px,transparent 1px)",backgroundSize:"60px 60px",pointerEvents:"none"}} />
           <div style={{position:"relative",zIndex:2}}>
@@ -621,11 +618,9 @@ export default function SendPage() {
           </div>
         </div>
 
-        {/* BODY */}
         <div style={{padding:"48px 60px"}} className="sp">
           <div style={{display:"grid",gridTemplateColumns:"1fr 320px",gap:32,alignItems:"start"}} className="sg">
 
-            {/* LEFT — wizard */}
             <div>
               {/* Step indicator */}
               <div style={{display:"flex",alignItems:"center",marginBottom:40}}>
@@ -652,6 +647,20 @@ export default function SendPage() {
                 {step===4 && <StepPayment form={form} set={set} couponStatus={couponStatus} couponMsg={couponMsg} checkCoupon={checkCoupon} isFree={isFree} />}
               </div>
 
+              {/* ── NEW: Error banner shown below the step card if insert fails ── */}
+              {submitError && (
+                <div style={{marginTop:16,background:"rgba(244,82,30,0.08)",border:"1px solid rgba(244,82,30,0.4)",padding:"16px 20px",display:"flex",alignItems:"flex-start",gap:12}}>
+                  <span style={{fontSize:20,flexShrink:0}}>⚠️</span>
+                  <div>
+                    <div style={{fontSize:14,fontWeight:600,color:"var(--orange)",marginBottom:4}}>Booking Failed</div>
+                    <div style={{fontSize:13,color:"var(--muted)",lineHeight:1.6}}>{submitError}</div>
+                    <div style={{fontSize:12,color:"var(--muted)",marginTop:8,fontFamily:"var(--font-mono)"}}>
+                      Please check the browser console for full details, or contact support.
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Nav buttons */}
               <div style={{display:"flex",justifyContent:"space-between",marginTop:20,gap:12}}>
                 <button onClick={()=>setStep(s=>Math.max(0,s-1))} disabled={step===0}
@@ -666,7 +675,7 @@ export default function SendPage() {
                     Continue →
                   </button>
                 ) : (
-                  <button onClick={()=>canNext()&&handleSubmit()}
+                  <button onClick={()=>!submitting&&canNext()&&handleSubmit()}
                     style={{background:canNext()?"var(--orange)":"rgba(244,82,30,0.3)",color:"#fff",border:"none",padding:"14px 36px",fontFamily:"var(--font-display)",fontSize:18,letterSpacing:2,cursor:canNext()?"pointer":"not-allowed",transition:"background 0.2s",flex:1,maxWidth:300}}
                     onMouseEnter={e=>{if(canNext())e.currentTarget.style.background="var(--orange-dark)";}}
                     onMouseLeave={e=>{e.currentTarget.style.background=canNext()?"var(--orange)":"rgba(244,82,30,0.3)";}}>
